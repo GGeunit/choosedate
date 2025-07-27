@@ -1,0 +1,49 @@
+HELP.md
+
+### 빌드 결과 ###
+/target/
+build/
+!**/src/main/**/target/
+!**/src/test/**/target/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### Maven Wrapper ###
+.mvn/wrapper/maven-wrapper.jar
+
+### STS(Spring Tool Suite) ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### 로그 파일 ###
+*.log
+
+### OS / 에디터 임시 파일 ###
+.DS_Store
+Thumbs.db
+
+### 민감한 설정 파일 (절대 올리면 안 됨) ###
+application.properties
+application.yml
+.env
