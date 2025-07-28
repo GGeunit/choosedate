@@ -24,6 +24,14 @@ public class PlaceServiceImpl implements PlaceService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<PlaceResponseDto> getPlacesByRegion(String region) {
+        return placeRepository.findByRegion(region)
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
+
     private PlaceResponseDto toDto(Place place) {
         return PlaceResponseDto.builder()
                 .id(place.getId())

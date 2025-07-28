@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/users/**").permitAll()
+                        .requestMatchers("/api/auth/**", "/api/users/**", "/api/places/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // 내가 만든 필터, 기준 필터 클래스(이거를 실행시키기 전 내가 만든 필터를 실행시켜라)

@@ -4,9 +4,7 @@ import com.choosedate.domain.dto.PlaceResponseDto;
 import com.choosedate.service.PlaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -20,5 +18,10 @@ public class PlaceController {
     @GetMapping
     public ResponseEntity<List<PlaceResponseDto>> getAllPlaces() {
         return ResponseEntity.ok(placeService.getAllPlaces());
+    }
+
+    @GetMapping("/region")
+    public ResponseEntity<List<PlaceResponseDto>> getPlacesByRegion(@RequestParam String region) {
+        return ResponseEntity.ok(placeService.getPlacesByRegion(region));
     }
 }

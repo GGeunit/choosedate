@@ -10,4 +10,6 @@ import java.util.List;
 public interface PlaceRepository extends JpaRepository<Place, Long> {
     // 카테고리, 지역, 키워드로 검색
     List<Place> findByCategoryAndRegionContainingAndKeywordContaining(String category, String region, String keyword);
+
+    List<Place> findByRegion(String region);
 }
