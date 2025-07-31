@@ -31,6 +31,7 @@ public class JwtUtil {
         long accessTokenValidTime = 1000L * 60 * 15; // 15분
 
         // 사용자 이름(subject)뿐 아니라 필요한 추가 정보들을 넣을 수 있음
+        // Claims: 정보 덩어리(사용자 정보)
         Claims claims = Jwts.claims().setSubject(username);
         Date now = new Date();
         Date expiry = new Date(now.getTime() + accessTokenValidTime);

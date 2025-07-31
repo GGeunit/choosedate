@@ -7,4 +7,6 @@ import java.util.List;
 public interface PlaceService {
     List<PlaceResponseDto> getAllPlaces();
     List<PlaceResponseDto> getPlacesByRegion(String region);
+    List<PlaceResponseDto> getPlacesByRegionAndCategory(String region, String category);
+    List<PlaceResponseDto> getPlacesByRegionAndKeyword(String region, String keyword);
 }
