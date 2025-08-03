@@ -8,6 +8,7 @@ import com.choosedate.domain.dto.*;
 import com.choosedate.repository.CourseRepository;
 import com.choosedate.repository.PlaceRepository;
 import com.choosedate.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -36,6 +37,7 @@ public class CourseServiceImpl implements CourseService {
                 .orElseThrow(() -> new RuntimeException("사용자 정보를 찾을 수 없습니다."));
     }
 
+    // 코스 미리보기
     @Override
     public List<CoursePreviewResponseDto> previewCourse(CoursePreviewRequestDto requestDto) {
 
@@ -50,6 +52,7 @@ public class CourseServiceImpl implements CourseService {
                 .build()).collect(Collectors.toList());
     }
 
+    // 코스 저장
     @Override
     public void saveCourse(CourseSaveRequestDto request) {
         User user = getCurrentUser();
@@ -75,6 +78,7 @@ public class CourseServiceImpl implements CourseService {
         courseRepository.save(course);
     }
 
+    // 사용자 코스 목록 조회
     @Override
     public List<CourseResponseDto> getUserCourses() {
         User user = getCurrentUser();
@@ -98,6 +102,7 @@ public class CourseServiceImpl implements CourseService {
                 ).collect(Collectors.toList());
     }
 
+    // 단일 코스 상세조회
     @Override
     public CourseResponseDto getCourse(Long courseId) {
         Course course = courseRepository.findById(courseId)
@@ -121,4 +126,59 @@ public class CourseServiceImpl implements CourseService {
                         .collect(Collectors.toList()))
                 .build();
     }
+
+    // 코스 제목/순서 수정
+    @Override
+    public void updateCourse(Long courseId, CourseUpdateRequestDto requestDto) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("코스를 찾을 수 없습니다."));
+
+        // 제목 수정
+        course.setTitle(requestDto.getTitle());
+
+        // 기존 CoursePlace 삭제
+        course.getCoursePlaces().clear();
+
+        // 새로은 CoursePlace 리스트 생성
+        List<CoursePlace> updatedPlaces = requestDto.getPlaces().stream().map(dto -> {
+            Place place = placeRepository.findById(dto.getPlaceId())
+                    .orElseThrow(() -> new IllegalArgumentException("장소가 존재하지 않습니다."));
+
+            return CoursePlace.builder()
+                    .course(course)
+                    .place(place)
+                    .sequence(dto.getSequence())
+                    .build();
+        }).toList();
+
+        course.getCoursePlaces().addAll(updatedPlaces);
+        courseRepository.save(course);
+    }
+
+    // 코스 삭제
+    @Override
+    @Transactional
+    public void deleteCourse(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("코스를 찾을 수 없습니다."));
+        courseRepository.delete(course);
+    }
+
+    // 코스 위도/경로 리스트 반환
+    @Override
+    public List<CourseLocationDto> getCourseLocations(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new IllegalArgumentException("코스가 존재하지 않습니다."));
+
+        return course.getCoursePlaces().stream()
+                .sorted(Comparator.comparingInt(CoursePlace::getSequence))
+                .map(cp -> {
+                    Place p = cp.getPlace();
+                    return CourseLocationDto.builder()
+                            .latitude(p.getLatitude())
+                            .longitude(p.getLongitude())
+                            .build();
+                }).collect(Collectors.toList());
+    }
+
 }
