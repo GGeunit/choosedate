@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface CourseService {
     List<CoursePreviewResponseDto> previewCourse(CoursePreviewRequestDto requestDto);
-    void saveCourse(CourseSaveRequestDto request);
+    Long saveCourse(CourseSaveRequestDto request);
     List<CourseResponseDto> getUserCourses();
     CourseResponseDto getCourse(Long courseId);
     void updateCourse(Long courseId, CourseUpdateRequestDto requestDto);

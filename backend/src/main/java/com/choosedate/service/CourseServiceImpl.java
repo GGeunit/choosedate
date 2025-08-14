@@ -54,7 +54,7 @@ public class CourseServiceImpl implements CourseService {
 
     // 코스 저장
     @Override
-    public void saveCourse(CourseSaveRequestDto request) {
+    public Long saveCourse(CourseSaveRequestDto request) {
         User user = getCurrentUser();
 
         Course course = Course.builder()
@@ -76,6 +76,8 @@ public class CourseServiceImpl implements CourseService {
         }
         course.setCoursePlaces(places);
         courseRepository.save(course);
+
+        return course.getId();
     }
 
     // 사용자 코스 목록 조회

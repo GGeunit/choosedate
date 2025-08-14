@@ -25,9 +25,9 @@ public class CourseContoller {
 
     // 코스 저장
     @PostMapping("/save")
-    public ResponseEntity<Void> saveCourse(@RequestBody CourseSaveRequestDto request) {
-        courseService.saveCourse(request);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Long> saveCourse(@RequestBody CourseSaveRequestDto request) {
+        Long courseId = courseService.saveCourse(request);
+        return ResponseEntity.ok(courseId);
     }
 
     // 사용자 코스 목록 조회
