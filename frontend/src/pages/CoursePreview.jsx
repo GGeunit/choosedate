@@ -25,7 +25,7 @@ function CoursePreview() {
     // React는 Virtual DOM(가상 DOM)을 사용해서 화면을 효율적으로 업데이트 함
     const mapRef = useRef(null); // 지도 div 참조
 
-    // 1) 전체 장소 불러오기 → placeMap 구성 + 선택 ID 적용
+    // 1) 전체 장소 불러오기 → placesMap 구성 + 선택 ID 적용
     useEffect(() => {
 
         axios.get("/places")
@@ -40,9 +40,9 @@ function CoursePreview() {
             .catch(console.error);
     }, []);
 
-    // 2) 코스/placeMap이 준비되면 백엔드에 경로 요약 요청
+    // 2) 코스/placesMap이 준비되면 백엔드에 경로 요약 요청
     useEffect(() => {
-        if(course.length < 2 || Object.keys(placeMap).length === 0) {
+        if(course.length < 2 || Object.keys(placesMap).length === 0) {
             return;
         }
 
@@ -57,9 +57,17 @@ function CoursePreview() {
         axios
             // { points }가 아닌, points로 보내면 body = { [ ... ] }로 전송되어 points라는 key를 찾을 수 없음
             .post("/route/summary", { points }) // body = { points: [ ... ] }
-            .then((res) => setRouteSummary(res.data))
+            .then((res) => {
+                const raw = res.data ?? {};
+                console.log("[/route/summary RAW]", raw);
+
+                // 백엔드가 segment를 안 주고나 null을 줄 가능성 대비
+                const segment = Array.isArray(raw.segment) ? raw.segment : []; // 백엔드 segment 키
+                const total = raw.total;
+                setRouteSummary({ segment, total });
+            })
             .catch((err) => console.error("경로 요약 실패", err));
-    }, [course, placeMap]);
+    }, [course, placesMap]);
 
     // 3) KaKao Map 지도 생성/갱신(마운트 시 지도 생성 + 마커 찍기 + 코스, 장소, 모드가 바뀔 때마다 선 스타일 갱신)
     useEffect(() => {
@@ -173,39 +181,117 @@ function CoursePreview() {
         }
     };
 
-    const minutes = (sec) => Math.max(1, Math.round((sec || 0)) / 60);
+    // 거리/시간 표기
+    const fmtKm = (meters) => Math.round(meters / 100) / 10; // 100m 단위 반올림 → 소수 1자리 km
+    const secToMinCeil = (sec) => {
+        if(sec === 0) {
+            return 0; // 정말로 이동이 없는 경우는 0분
+        }
+        return Math.ceil(sec / 60);
+    };
 
     return (
-        <div style={{ padding: "2rem" }}>
-            <h2>🧭 코스 미리보기</h2>
+    <div style={{ padding: "2rem" }}>
+      <h2>🧭 코스 미리보기</h2>
 
-            {/* 지도 영역 */}
-            <div style={{ marginBottom: "2rem", height: "400px" }}>
-                <div ref={mapRef} style={{ width: "100%", height: "100%" }}></div>
-            </div>
+      {/* 이동수단 토글 (★ 추가) */}
+      <div style={{ margin: "8px 0 16px" }}>
+        <label>
+          <input
+            type="radio"
+            checked={mode === "drive"}
+            onChange={() => setMode("drive")}
+          />{" "}
+          🚕 차량
+        </label>
+        <label style={{ marginLeft: 12 }}>
+          <input
+            type="radio"
+            checked={mode === "walk"}
+            onChange={() => setMode("walk")}
+          />{" "}
+          🥾 도보
+        </label>
+      </div>
 
-            <ul style={{ listStyle: "none", padding: 0 }}>
-                {course.map((placeId, index) => {
-                    const place = placesMap[placeId];
-                    if (!place) return null;
-                    return (
-                        <li key={placeId} style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                                <div>
-                                    <strong>{index + 1}. {place.name}</strong><br />
-                                    <small>{place.region} / {place.category}</small>
-                                </div>
-                                <div>
-                                    <button onClick={() => moveUp(index)}>🔼</button>
-                                    <button onClick={() => moveDown(index)}>🔽</button>
-                                </div>
-                            </div>
-                        </li>
-                    );
-                })}
-            </ul>
-            <button onClick={handleSave}>💾 코스 저장</button>
+      {/* 지도 영역 */}
+      <div style={{ marginBottom: "1rem", height: "400px" }}>
+        <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
+      </div>
+
+      {/* 경로 요약 표 (★ 추가) */}
+      {routeSummary && (
+        <div
+          style={{
+            border: "1px solid #eee",
+            padding: "12px",
+            borderRadius: 8,
+            marginBottom: 16,
+          }}
+        >
+          <h4 style={{ marginTop: 0 }}>구간별 이동 시간</h4>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+            {routeSummary.segment.map((seg) => {
+              const from = placesMap[course[seg.indexFrom]];
+              const to = placesMap[course[seg.indexTo]];
+              const sec = mode === "drive" ? seg.driveDurationSec : seg.walkDurationSec;
+              const min = secToMinCeil(sec);
+              return (
+                <li
+                  key={`${seg.indexFrom}-${seg.indexTo}`}
+                  style={{ padding: "6px 0" }}
+                >
+                  {seg.indexFrom + 1} → {seg.indexTo + 1} : {from?.name} → {to?.name}
+                  {" · "} {min}분 / {fmtKm(seg.distanceMeters)} km
+                </li>
+              );
+            })}
+          </ul>
+
+          <div style={{ marginTop: 8, fontWeight: 600 }}>
+            총 소요시간:{" "}
+            {secToMinCeil(
+              mode === "drive"
+                ? routeSummary.total.driveDurationSec
+                : routeSummary.total.walkDurationSec
+            )}
+            분{" · "} 총 거리: {fmtKm(routeSummary.total.distanceMeters)} km
+          </div>
         </div>
-    );
+      )}
+
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {course.map((placeId, index) => {
+          const place = placesMap[placeId];
+          if (!place) return null;
+          return (
+            <li
+              key={placeId}
+              style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <div>
+                  <strong>
+                    {index + 1}. {place.name}
+                  </strong>
+                  <br />
+                  <small>
+                    {place.region} / {place.category}
+                  </small>
+                </div>
+                <div>
+                  <button onClick={() => moveUp(index)}>🔼</button>
+                  <button onClick={() => moveDown(index)}>🔽</button>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <button onClick={handleSave}>💾 코스 저장</button>
+    </div>
+  );
 }
+
 export default CoursePreview;
